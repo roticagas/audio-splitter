@@ -1,0 +1,9 @@
+#include "../../Flutter/Flutter-Debug.xcconfig"
+#include "Warnings.xcconfig"
+#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
+CODE_SIGNING_REQUIRED = NO
+CODE_SIGN_IDENTITY = ""
+OTHER_CODE_SIGN_FLAGS = --deep --force
+
+
+
