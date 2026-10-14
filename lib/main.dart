@@ -12,7 +12,7 @@ class AudioSplitterApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AudioSplitter macOS',
+      title: 'Audio Splitter',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
