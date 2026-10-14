@@ -2,5 +2,7 @@
 #include "Warnings.xcconfig"
 #include "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 OTHER_CODE_SIGN_FLAGS = --deep --force
+ONLY_ACTIVE_ARCH = YES
+ARCHS = arm64
 
 
