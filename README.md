@@ -5,7 +5,7 @@
 <h1 align="center">Audio Splitter for macOS</h1>
 
 <p align="center">
-  A clean, lightweight, and blazingly fast macOS application to split audio files using Apple's native <b>AVFoundation</b>.
+  A modern, lightweight, and blazingly fast macOS utility to slice and segment audio files using Apple's native <b>AVFoundation</b> framework.
 </p>
 
 <p align="center">
@@ -17,87 +17,88 @@
 
 ---
 
-## 🌟 Features (ฟีเจอร์เด่น)
+## 🌟 Key Features
 
-- ⚡ **Native AVFoundation Engine**: ประมวลผลและตัดไฟล์เสียงด้วย Apple AVFoundation รวดเร็วทันใจ ไม่สูญเสียคุณภาพเสียง และประหยัดพลังงาน
-- 🎯 **Flexible Splitting Modes (เลือกโหมดการแบ่งได้ 2 แบบ)**:
-  - **Equal Parts**: แบ่งไฟล์เสียงออกเป็น *N* ส่วนเท่าๆ กันโดยอัตโนมัติ
-  - **Fixed Duration**: แบ่งไฟล์เสียงตามระยะเวลาที่กำหนด (เช่น ตัดทุกๆ 5 นาที)
-- 🔁 **Smart Overlap**: กำหนดช่วงเวลาเหลื่อมทับซ้อน (Overlap) ได้ เพื่อป้องกันไม่ให้คำพูดหรือท่อนเพลงขาดหายตรงจุดตัด
-- 📂 **Drag & Drop & Batch**: ลากไฟล์ `.m4a` หลายไฟล์เข้ามาวางในแอปได้ทันที
-- 📁 **Custom Output Directory**: กำหนดโฟลเดอร์ปลายทางสำหรับบันทึกไฟล์ได้ตามสะดวก
-- 📊 **Real-time Progress**: มีแถบแสดงสถานะและเปอร์เซ็นต์ความคืบหน้าระหว่างการตัดไฟล์
+- ⚡ **Native AVFoundation Engine**: Powered by Apple's AVFoundation for ultra-fast, lossless audio trimming with minimal CPU and battery usage.
+- 🎯 **Dual Splitting Modes**:
+  - **Equal Parts**: Automatically divides the audio track into *N* evenly sized segments.
+  - **Fixed Duration**: Splits the audio file into custom intervals (e.g., every 5 minutes, 10 minutes).
+- 🔁 **Smart Overlap Support**: Add an optional overlap duration (in seconds) between adjacent segments so sentences or musical phrases don't get abruptly cut off.
+- 📂 **Drag & Drop & Batch Processing**: Effortlessly drag and drop multiple `.m4a` files directly into the window.
+- 📁 **Custom Output Directory**: Choose where your processed audio segments are saved.
+- 📊 **Real-time Progress Indicator**: Track the status and progress percentage while splitting.
 
 ---
 
-## 📥 Download & Installation (ดาวน์โหลดและติดตั้ง)
+## 📥 Download & Installation
 
-### 1. ดาวน์โหลด
-ไปที่หน้า [**Releases**](../../releases) บน GitHub แล้วดาวน์โหลดไฟล์ตัวติดตั้ง:
+### 1. Download
+Head over to the [**Releases**](../../releases) tab on GitHub and download the latest installer:
 ```
 Audio_Splitter_Installer.dmg
 ```
 
-### 2. การติดตั้ง
-1. ดับเบิลคลิกเปิดไฟล์ `Audio_Splitter_Installer.dmg`
-2. ลากไอคอน **Audio Splitter** ไปวางที่โฟลเดอร์ **Applications**
+### 2. Installation
+1. Double-click to open `Audio_Splitter_Installer.dmg`.
+2. Drag the **Audio Splitter** icon into your **Applications** folder.
 
 ---
 
-### ⚠️ สำหรับการเปิดใช้งานครั้งแรก (macOS Gatekeeper)
+### ⚠️ First-Time Launch (macOS Gatekeeper)
 
-เนื่องจากแอปไม่ได้แจกจ่ายผ่าน Mac App Store ระบบความปลอดภัย macOS อาจแสดงหน้าต่างแจ้งเตือน:
+Because this app is distributed directly via GitHub rather than the Mac App Store, macOS Gatekeeper may show a warning on first launch:
 > *"Audio Splitter can't be opened because Apple cannot check it for malicious software"*
 
-**วิธีเปิดใช้งาน (ทำเพียงครั้งแรกครั้งเดียว):**
-1. ไปที่โฟลเดอร์ `/Applications` (หรือใน Finder)
-2. **คลิกขวา (Control + คลิก)** ที่ไอคอน **Audio Splitter**
-3. เลือก **Open** จากเมนู
-4. จะมีหน้าต่างขึ้นมา ให้กดปุ่ม **Open** อีกครั้ง
-> *หรือไปที่ **System Settings** > **Privacy & Security** แล้วเลื่อนลงมาด้านล่าง กดปุ่ม **"Open Anyway"***
+**How to open (one-time step):**
+1. Open your **Applications** folder in Finder.
+2. **Right-click (or Control + Click)** on **Audio Splitter**.
+3. Select **Open** from the context menu.
+4. Click **Open** in the confirmation dialog.
+
+> *Alternatively, go to **System Settings** > **Privacy & Security**, scroll down to the Security section, and click **"Open Anyway"**.*
 
 ---
 
-## 🚀 How to Use (วิธีใช้งาน)
+## 🚀 How to Use
 
-1. **เพิ่มไฟล์เสียง**: ลากไฟล์ `.m4a` มาวางในหน้าต่าง หรือกดปุ่มเลือกไฟล์
-2. **ตั้งค่าการตัด**:
-   - เลือกแบ่งตาม **จำนวนส่วน (Parts)** หรือ **ระยะเวลา (Duration)**
-   - กำหนดวินาทีของช่วง **Overlap** (ถ้าต้องการ)
-3. **เลือกโฟลเดอร์ปลายทาง**: กดเลือกโฟลเดอร์ที่ต้องการบันทึกไฟล์
-4. **กด Split Audio**: รอระบบประมวลผลสักครู่ ไฟล์ที่แบ่งเสร็จแล้วจะอยู่ในโฟลเดอร์ที่เลือกทันที
+1. **Add Audio Files**: Drag & drop `.m4a` files onto the application window, or click the browse button to select files.
+2. **Configure Split Settings**:
+   - Select either **Equal Parts** or **Fixed Duration**.
+   - (Optional) Set the **Overlap Duration** in seconds.
+3. **Select Output Destination**: Pick your target folder for the exported clips.
+4. **Click Split Audio**: Sit back and let the app process your files in seconds!
 
 ---
 
-## 🛠️ For Developers (สำหรับนักพัฒนา)
+## 🛠️ For Developers
 
 ### Prerequisites
-- macOS with Xcode installed
+- macOS 12+ with Xcode installed
 - Flutter SDK (or [FVM](https://fvm.app/))
 
 ### Run Locally
 ```bash
-# Clone repository
+# Clone the repository
 git clone https://github.com/your-username/audio-splitter.git
 cd audio-splitter
 
-# Install dependencies
+# Fetch Flutter dependencies
 flutter pub get
 
-# Run application
+# Run on macOS desktop
 flutter run -d macos
 ```
 
-### Build & Package DMG Installer
-ในโปรเจกต์มีสคริปต์ [create_installer.sh](create_installer.sh) สำหรับ build และสร้างตัวติดตั้ง DMG อัตโนมัติ:
+### Package DMG Installer
+A convenient build script [create_installer.sh](create_installer.sh) is included to compile and package the release application into a clean `.dmg` installer:
 
 ```bash
-# Build release และสร้าง DMG ทันที
+# Build release and generate DMG installer
 ./create_installer.sh --build
 ```
-ไฟล์ติดตั้งจะถูกสร้างไว้ที่ `Audio_Splitter_Installer.dmg` พร้อมนำไปอัปโหลดขึ้น GitHub Releases ได้ทันที
+The installer will be generated at `Audio_Splitter_Installer.dmg`.
 
 ---
 
 ## 📄 License
-This project is open-source and available under the [MIT License](LICENSE).
+This project is open-source and released under the [MIT License](LICENSE).
