@@ -7,6 +7,8 @@ import 'package:path/path.dart' as p;
 import '../models/audio_item.dart';
 import '../models/split_config.dart';
 import '../services/native_audio_service.dart';
+import '../utils/split_calculator.dart';
+
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -114,16 +116,11 @@ class _MainScreenState extends State<MainScreen> {
         } catch (_) {}
       }
 
-      if (_config.mode == SplitMode.equalParts) {
-        totalTasks += _config.partsCount;
-      } else {
-        final chunkSec = _config.durationMinutes * 60.0;
-        if (chunkSec > 0 && item.durationSeconds > 0) {
-          totalTasks += (item.durationSeconds / chunkSec).ceil();
-        } else {
-          totalTasks += 1;
-        }
-      }
+      final segments = SplitCalculator.calculateSegments(
+        totalDuration: item.durationSeconds,
+        config: _config,
+      );
+      totalTasks += segments.isNotEmpty ? segments.length : 1;
     }
 
     if (totalTasks == 0) totalTasks = 1;
@@ -143,69 +140,42 @@ class _MainScreenState extends State<MainScreen> {
       try {
         Directory(targetFolder).createSync(recursive: true);
         final double totalDur = item.durationSeconds;
+        final segments = SplitCalculator.calculateSegments(
+          totalDuration: totalDur,
+          config: _config,
+        );
+
         int producedCount = 0;
 
-        if (_config.mode == SplitMode.equalParts) {
-          final int parts = _config.partsCount;
-          final double segmentLen = totalDur / parts;
+        for (final segment in segments) {
+          final String outName = SplitCalculator.generateOutputFilename(
+            rawName: rawName,
+            index: segment.index,
+            totalCount: segments.length,
+            mode: _config.mode,
+            actualStart: segment.actualStart,
+            actualEnd: segment.actualEnd,
+          );
+          final String outPath = p.join(targetFolder, outName);
 
-          for (int i = 0; i < parts; i++) {
-            final double start = i * segmentLen;
-            final double dur = (i == parts - 1) ? (totalDur - start) : segmentLen;
-            final String outName = '${rawName}_part_${i + 1}_of_$parts.m4a';
-            final String outPath = p.join(targetFolder, outName);
+          setState(() {
+            _currentStepMessage = 'กำลังแบ่ง [${item.name}] ส่วนที่ ${segment.index + 1}/${segments.length}...';
+          });
 
-            setState(() {
-              _currentStepMessage = 'กำลังแบ่ง [${item.name}] ส่วนที่ ${i + 1}/$parts...';
-            });
+          await NativeAudioService.splitAudioSegment(
+            inputPath: item.path,
+            outputPath: outPath,
+            startTime: segment.actualStart,
+            duration: segment.actualDuration,
+          );
 
-            await NativeAudioService.splitAudioSegment(
-              inputPath: item.path,
-              outputPath: outPath,
-              startTime: start,
-              duration: dur,
-            );
-
-            completedTasks++;
-            producedCount++;
-            setState(() {
-              _currentProgress = completedTasks / totalTasks;
-            });
-          }
-        } else {
-          // Fixed duration mode
-          final double chunkSec = _config.durationMinutes * 60.0;
-          final int totalChunks = (totalDur / chunkSec).ceil();
-
-          for (int i = 0; i < totalChunks; i++) {
-            final double start = i * chunkSec;
-            double dur = chunkSec;
-            if (start + dur > totalDur) {
-              dur = totalDur - start;
-            }
-            if (dur <= 0) break;
-
-            final String outName = '${rawName}_part_${i + 1}.m4a';
-            final String outPath = p.join(targetFolder, outName);
-
-            setState(() {
-              _currentStepMessage = 'กำลังแบ่ง [${item.name}] ส่วนที่ ${i + 1}/$totalChunks...';
-            });
-
-            await NativeAudioService.splitAudioSegment(
-              inputPath: item.path,
-              outputPath: outPath,
-              startTime: start,
-              duration: dur,
-            );
-
-            completedTasks++;
-            producedCount++;
-            setState(() {
-              _currentProgress = completedTasks / totalTasks;
-            });
-          }
+          completedTasks++;
+          producedCount++;
+          setState(() {
+            _currentProgress = completedTasks / totalTasks;
+          });
         }
+
 
         setState(() {
           item.status = ProcessStatus.completed;
@@ -271,7 +241,7 @@ class _MainScreenState extends State<MainScreen> {
                 right: BorderSide(color: Color(0xFF334155), width: 1),
               ),
             ),
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -324,246 +294,369 @@ class _MainScreenState extends State<MainScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 32),
-                const Text(
-                  'ตั้งค่าการแบ่งไฟล์ (Config)',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Mode Selector Segmented Toggle
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            if (_isProcessing) return;
-                            setState(() {
-                              _config.mode = SplitMode.equalParts;
-                            });
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              color: _config.mode == SplitMode.equalParts
-                                  ? const Color(0xFF6366F1)
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              'แบ่งกี่ส่วน',
-                              style: TextStyle(
-                                color: _config.mode == SplitMode.equalParts
-                                    ? Colors.white
-                                    : const Color(0xFF94A3B8),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            if (_isProcessing) return;
-                            setState(() {
-                              _config.mode = SplitMode.fixedDuration;
-                            });
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              color: _config.mode == SplitMode.fixedDuration
-                                  ? const Color(0xFF6366F1)
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              'แบ่งตามเวลา',
-                              style: TextStyle(
-                                color: _config.mode == SplitMode.fixedDuration
-                                    ? Colors.white
-                                    : const Color(0xFF94A3B8),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
                 const SizedBox(height: 24),
 
-                // Config Details
-                if (_config.mode == SplitMode.equalParts) ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'จำนวนส่วนที่ต้องการแบ่ง:',
-                        style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 13),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF334155),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          '${_config.partsCount} ส่วน',
-                          style: const TextStyle(
-                            color: Color(0xFF818CF8),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: const Color(0xFF6366F1),
-                      inactiveTrackColor: const Color(0xFF334155),
-                      thumbColor: Colors.white,
-                    ),
-                    child: Slider(
-                      value: _config.partsCount.toDouble(),
-                      min: 2,
-                      max: 30,
-                      divisions: 28,
-                      onChanged: _isProcessing
-                          ? null
-                          : (v) {
-                              setState(() {
-                                _config.partsCount = v.round();
-                              });
-                            },
-                    ),
-                  ),
-                  const Text(
-                    'ระบบจะแบ่งไฟล์ออกเป็นจำนวนส่วนเท่าๆ กันโดยอัตโนมัติ',
-                    style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
-                  ),
-                ] else ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'ความยาวส่วนละ (นาที):',
-                        style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 13),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF334155),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          '${_config.durationMinutes.toStringAsFixed(1)} นาที',
-                          style: const TextStyle(
-                            color: Color(0xFF818CF8),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: const Color(0xFF6366F1),
-                      inactiveTrackColor: const Color(0xFF334155),
-                      thumbColor: Colors.white,
-                    ),
-                    child: Slider(
-                      value: _config.durationMinutes,
-                      min: 0.5,
-                      max: 60.0,
-                      divisions: 119,
-                      onChanged: _isProcessing
-                          ? null
-                          : (v) {
-                              setState(() {
-                                _config.durationMinutes = (v * 2).round() / 2;
-                              });
-                            },
-                    ),
-                  ),
-                  const Text(
-                    'ไฟล์จะถูกแบ่งตามความยาวที่กำหนด และส่วนสุดท้ายจะเก็บเวลาที่เหลือทั้งหมด',
-                    style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
-                  ),
-                ],
-
-                const SizedBox(height: 32),
-                const Text(
-                  'สถานที่จัดเก็บ (Export Directory)',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                InkWell(
-                  onTap: _isProcessing ? null : _pickOutputFolder,
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0F172A),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF334155)),
-                    ),
-                    child: Row(
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.folder_open_rounded, color: Color(0xFF818CF8), size: 20),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _config.customOutputFolder ?? 'ตามโฟลเดอร์เดิมของไฟล์ (Same as input)',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: _config.customOutputFolder != null
-                                  ? Colors.white
-                                  : const Color(0xFF94A3B8),
-                              fontSize: 12,
+                        const Text(
+                          'ตั้งค่าการแบ่งไฟล์ (Config)',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Mode Selector Segmented Toggle
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0F172A),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    if (_isProcessing) return;
+                                    setState(() {
+                                      _config.mode = SplitMode.equalParts;
+                                    });
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: _config.mode == SplitMode.equalParts
+                                          ? const Color(0xFF6366F1)
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      'แบ่งกี่ส่วน',
+                                      style: TextStyle(
+                                        color: _config.mode == SplitMode.equalParts
+                                            ? Colors.white
+                                            : const Color(0xFF94A3B8),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    if (_isProcessing) return;
+                                    setState(() {
+                                      _config.mode = SplitMode.fixedDuration;
+                                    });
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: _config.mode == SplitMode.fixedDuration
+                                          ? const Color(0xFF6366F1)
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      'แบ่งตามเวลา',
+                                      style: TextStyle(
+                                        color: _config.mode == SplitMode.fixedDuration
+                                            ? Colors.white
+                                            : const Color(0xFF94A3B8),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Config Details
+                        if (_config.mode == SplitMode.equalParts) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'จำนวนส่วนที่ต้องการแบ่ง:',
+                                style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 13),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF334155),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  '${_config.partsCount} ส่วน',
+                                  style: const TextStyle(
+                                    color: Color(0xFF818CF8),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              activeTrackColor: const Color(0xFF6366F1),
+                              inactiveTrackColor: const Color(0xFF334155),
+                              thumbColor: Colors.white,
+                            ),
+                            child: Slider(
+                              value: _config.partsCount.toDouble(),
+                              min: 2,
+                              max: 30,
+                              divisions: 28,
+                              onChanged: _isProcessing
+                                  ? null
+                                  : (v) {
+                                      setState(() {
+                                        _config.partsCount = v.round();
+                                      });
+                                    },
+                            ),
+                          ),
+                          const Text(
+                            'ระบบจะแบ่งไฟล์ออกเป็นจำนวนส่วนเท่าๆ กันโดยอัตโนมัติ',
+                            style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                          ),
+                        ] else ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'ความยาวส่วนละ (นาที):',
+                                style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 13),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF334155),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  '${_config.durationMinutes.toStringAsFixed(1)} นาที',
+                                  style: const TextStyle(
+                                    color: Color(0xFF818CF8),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              activeTrackColor: const Color(0xFF6366F1),
+                              inactiveTrackColor: const Color(0xFF334155),
+                              thumbColor: Colors.white,
+                            ),
+                            child: Slider(
+                              value: _config.durationMinutes,
+                              min: 0.5,
+                              max: 60.0,
+                              divisions: 119,
+                              onChanged: _isProcessing
+                                  ? null
+                                  : (v) {
+                                      setState(() {
+                                        _config.durationMinutes = (v * 2).round() / 2;
+                                      });
+                                    },
+                            ),
+                          ),
+                          const Text(
+                            'ไฟล์จะถูกแบ่งตามความยาวที่กำหนด และส่วนสุดท้ายจะเก็บเวลาที่เหลือทั้งหมด',
+                            style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                          ),
+                        ],
+
+                        const SizedBox(height: 20),
+
+                        // Overlap (Option B: Head Overlap)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'การเหลื่อมเวลา (Overlap):',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF334155),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                _config.overlapSeconds == 0
+                                    ? 'ปิด (0s)'
+                                    : '${_config.overlapSeconds.toInt()} วินาที',
+                                style: TextStyle(
+                                  color: _config.overlapSeconds > 0
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFF94A3B8),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Overlap Segmented Control (0s, 5s, 10s, 15s)
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0F172A),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              for (final sec in [0.0, 5.0, 10.0, 15.0])
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: _isProcessing
+                                        ? null
+                                        : () {
+                                            setState(() {
+                                              _config.overlapSeconds = sec;
+                                            });
+                                          },
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 200),
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: _config.overlapSeconds == sec
+                                            ? const Color(0xFF6366F1)
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        sec == 0 ? 'Off (0s)' : '${sec.toInt()}s',
+                                        style: TextStyle(
+                                          color: _config.overlapSeconds == sec
+                                              ? Colors.white
+                                              : const Color(0xFF94A3B8),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Option B (Head Overlap): ดึงเวลาเริ่มของไฟล์ที่ 2 เป็นต้นไปถอยหลังกลับมา ป้องกันเสียงขาดตอน',
+                          style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Filename & Time Estimation Preview
+                        const Text(
+                          'ตัวอย่างชื่อไฟล์ (Filename Preview):',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0F172A),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFF334155)),
+                          ),
+                          child: _buildFilenamePreview(),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        const Text(
+                          'สถานที่จัดเก็บ (Export Directory)',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        InkWell(
+                          onTap: _isProcessing ? null : _pickOutputFolder,
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0F172A),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFF334155)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.folder_open_rounded, color: Color(0xFF818CF8), size: 20),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    _config.customOutputFolder ?? 'ตามโฟลเดอร์เดิมของไฟล์ (Same as input)',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: _config.customOutputFolder != null
+                                          ? Colors.white
+                                          : const Color(0xFF94A3B8),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
+                        const SizedBox(height: 12),
                       ],
                     ),
                   ),
                 ),
 
-                const Spacer(),
+                const SizedBox(height: 12),
 
                 // Start Action Button
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
+                  height: 48,
                   child: ElevatedButton(
                     onPressed: _isProcessing ? null : _startSplitting,
                     style: ElevatedButton.styleFrom(
@@ -579,8 +672,8 @@ class _MainScreenState extends State<MainScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               SizedBox(
-                                width: 20,
-                                height: 20,
+                                width: 18,
+                                height: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   color: Colors.white,
@@ -593,13 +686,13 @@ class _MainScreenState extends State<MainScreen> {
                         : const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.content_cut_rounded, color: Colors.white, size: 20),
+                              Icon(Icons.content_cut_rounded, color: Colors.white, size: 18),
                               SizedBox(width: 8),
                               Text(
                                 'เริ่มแยกไฟล์เสียง',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 15,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -610,6 +703,7 @@ class _MainScreenState extends State<MainScreen> {
               ],
             ),
           ),
+
 
           // Main File Area
           Expanded(
@@ -623,25 +717,30 @@ class _MainScreenState extends State<MainScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'รายการไฟล์เสียง (.m4a)',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'รายการไฟล์เสียง (.m4a)',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'นำเข้าไฟล์เพื่อเริ่มทำการแบ่งตามการตั้งค่า (${_audioFiles.length} ไฟล์)',
-                            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                          ),
-                        ],
+                            const SizedBox(height: 4),
+                            Text(
+                              'นำเข้าไฟล์เพื่อเริ่มทำการแบ่งตามการตั้งค่า (${_audioFiles.length} ไฟล์)',
+                              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 12),
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           OutlinedButton.icon(
                             onPressed: _isProcessing ? null : _pickFiles,
@@ -665,6 +764,7 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     ],
                   ),
+
 
                   const SizedBox(height: 20),
 
@@ -770,7 +870,10 @@ class _MainScreenState extends State<MainScreen> {
                                                 ),
                                               ),
                                               const SizedBox(height: 4),
-                                              Row(
+                                              Wrap(
+                                                spacing: 12,
+                                                runSpacing: 4,
+                                                crossAxisAlignment: WrapCrossAlignment.center,
                                                 children: [
                                                   Text(
                                                     'ขนาด: ${item.formattedSize}',
@@ -779,7 +882,6 @@ class _MainScreenState extends State<MainScreen> {
                                                       fontSize: 12,
                                                     ),
                                                   ),
-                                                  const SizedBox(width: 12),
                                                   Text(
                                                     'ความยาว: ${item.formattedDuration}',
                                                     style: const TextStyle(
@@ -787,6 +889,23 @@ class _MainScreenState extends State<MainScreen> {
                                                       fontSize: 12,
                                                     ),
                                                   ),
+                                                  if (item.durationSeconds > 0) ...[
+                                                    Builder(
+                                                      builder: (context) {
+                                                        final segs = SplitCalculator.calculateSegments(
+                                                          totalDuration: item.durationSeconds,
+                                                          config: _config,
+                                                        );
+                                                        return Text(
+                                                          'ประเมิน: ${segs.length} ไฟล์${_config.overlapSeconds > 0 ? " (เหลื่อม ${_config.overlapSeconds.toInt()}s)" : ""}',
+                                                          style: const TextStyle(
+                                                            color: Color(0xFF818CF8),
+                                                            fontSize: 12,
+                                                          ),
+                                                        );
+                                                      },
+                                                    ),
+                                                  ],
                                                 ],
                                               ),
                                             ],
@@ -931,5 +1050,107 @@ class _MainScreenState extends State<MainScreen> {
           ),
         );
     }
+  }
+
+  Widget _buildFilenamePreview() {
+    String sampleName = 'sample_audio';
+    double sampleTotalDur = 900.0; // Default 15 minutes for preview
+
+    if (_audioFiles.isNotEmpty) {
+      final first = _audioFiles.first;
+      sampleName = p.basenameWithoutExtension(first.path);
+      if (first.durationSeconds > 0) {
+        sampleTotalDur = first.durationSeconds;
+      }
+    }
+
+    final segments = SplitCalculator.calculateSegments(
+      totalDuration: sampleTotalDur,
+      config: _config,
+    );
+
+    if (segments.isEmpty) {
+      return const Text(
+        'ไม่สามารถประเมินชื่อไฟล์ได้',
+        style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
+      );
+    }
+
+    final previewSegments = segments.take(2).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final seg in previewSegments) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E293B),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: seg.effectiveOverlap > 0
+                    ? const Color(0xFF10B981).withOpacity(0.3)
+                    : const Color(0xFF334155),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  SplitCalculator.generateOutputFilename(
+                    rawName: sampleName,
+                    index: seg.index,
+                    totalCount: segments.length,
+                    mode: _config.mode,
+                    actualStart: seg.actualStart,
+                    actualEnd: seg.actualEnd,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF818CF8),
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'ช่วง: ${SplitCalculator.formatTimeForFilename(seg.actualStart)} - ${SplitCalculator.formatTimeForFilename(seg.actualEnd)} (${seg.actualDuration.toStringAsFixed(1)}s)',
+                      style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+                    ),
+                    if (seg.effectiveOverlap > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'เหลื่อมหน้า ${seg.effectiveOverlap.toInt()}s',
+                          style: const TextStyle(
+                            color: Color(0xFF10B981),
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (segments.length > 2)
+          Text(
+            '... และอีก ${segments.length - 2} ไฟล์ (${segments.length} ส่วน)',
+            style: const TextStyle(color: Color(0xFF64748B), fontSize: 10, fontStyle: FontStyle.italic),
+          ),
+      ],
+    );
   }
 }
