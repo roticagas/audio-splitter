@@ -92,11 +92,11 @@ class SplitCalculator {
       final end = rawChunks[i].end;
       final double chunkDuration = end - start;
 
-      // 3.2 Guardrail: ป้องกันกรณีไฟล์สั้นมากแต่ตั้ง Overlap ยาวเกินความยาวของท่อนเสียง
+      // 3.2 Guardrail: Prevent overlap from exceeding 50% of chunk duration on very short clips
       final double effectiveOverlap = min(requestedOverlap, chunkDuration * 0.5);
 
       // Option B: Head Overlap
-      // ยึดจุดจบ (end) ไว้ที่เดิม แล้วดึงเวลาเริ่ม (start) ของไฟล์ที่ 2 เป็นต้นไปถอยหลังกลับมาตามค่า overlap
+      // Keep end unchanged, pull back start time for parts after the first
       final double actualStart = (i == 0) ? 0.0 : max(0.0, start - effectiveOverlap);
       final double actualEnd = end;
       final double actualDuration = actualEnd - actualStart;

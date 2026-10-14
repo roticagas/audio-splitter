@@ -67,7 +67,7 @@ class _MainScreenState extends State<MainScreen> {
 
   void _pickOutputFolder() async {
     final selectedDirectory = await FilePicker.getDirectoryPath(
-      dialogTitle: 'เลือกโฟลเดอร์สำหรับเซฟไฟล์ที่แบ่งแล้ว',
+      dialogTitle: 'Select Output Folder',
     );
     if (selectedDirectory != null) {
       setState(() {
@@ -94,7 +94,7 @@ class _MainScreenState extends State<MainScreen> {
     if (_audioFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('กรุณาเลือกไฟล์ .m4a อย่างน้อย 1 ไฟล์'),
+          content: Text('Please select at least one .m4a file'),
           backgroundColor: Colors.amber,
         ),
       );
@@ -104,7 +104,7 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _isProcessing = true;
       _currentProgress = 0.0;
-      _currentStepMessage = 'กำลังเตรียมระบบเริ่มแบ่งไฟล์...';
+      _currentStepMessage = 'Preparing to split files...';
     });
 
     int totalTasks = 0;
@@ -159,7 +159,7 @@ class _MainScreenState extends State<MainScreen> {
           final String outPath = p.join(targetFolder, outName);
 
           setState(() {
-            _currentStepMessage = 'กำลังแบ่ง [${item.name}] ส่วนที่ ${segment.index + 1}/${segments.length}...';
+            _currentStepMessage = 'Splitting [${item.name}] part ${segment.index + 1}/${segments.length}...';
           });
 
           await NativeAudioService.splitAudioSegment(
@@ -192,7 +192,7 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _isProcessing = false;
       _currentProgress = 1.0;
-      _currentStepMessage = 'เสร็จสิ้นการแบ่งไฟล์ทั้งหมดแล้ว!';
+      _currentStepMessage = 'All files split successfully!';
     });
 
     if (mounted) {
@@ -204,11 +204,11 @@ class _MainScreenState extends State<MainScreen> {
             children: [
               Icon(Icons.check_circle, color: Color(0xFF10B981)),
               SizedBox(width: 10),
-              Text('ดำเนินการเรียบร้อย', style: TextStyle(color: Colors.white)),
+              Text('Completed', style: TextStyle(color: Colors.white)),
             ],
           ),
           content: Text(
-            'ทำการแบ่งไฟล์เสียงเรียบร้อยแล้ว\nบันทึกไว้ที่: ${_config.customOutputFolder ?? "โฟลเดอร์ดั้งเดิมของไฟล์"}',
+            'Audio files split successfully.\nSaved to: ${_config.customOutputFolder ?? "Original file folder"}',
             style: const TextStyle(color: Color(0xFF94A3B8)),
           ),
           actions: [
@@ -218,7 +218,7 @@ class _MainScreenState extends State<MainScreen> {
                 foregroundColor: Colors.white,
               ),
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('ตกลง'),
+              child: const Text('OK'),
             ),
           ],
         ),
@@ -302,7 +302,7 @@ class _MainScreenState extends State<MainScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'ตั้งค่าการแบ่งไฟล์ (Config)',
+                          'Split Settings',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 15,
@@ -339,7 +339,7 @@ class _MainScreenState extends State<MainScreen> {
                                     ),
                                     alignment: Alignment.center,
                                     child: Text(
-                                      'แบ่งกี่ส่วน',
+                                      'Equal Parts',
                                       style: TextStyle(
                                         color: _config.mode == SplitMode.equalParts
                                             ? Colors.white
@@ -370,7 +370,7 @@ class _MainScreenState extends State<MainScreen> {
                                     ),
                                     alignment: Alignment.center,
                                     child: Text(
-                                      'แบ่งตามเวลา',
+                                      'By Duration',
                                       style: TextStyle(
                                         color: _config.mode == SplitMode.fixedDuration
                                             ? Colors.white
@@ -394,7 +394,7 @@ class _MainScreenState extends State<MainScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text(
-                                'จำนวนส่วนที่ต้องการแบ่ง:',
+                                'Number of parts:',
                                 style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 13),
                               ),
                               Container(
@@ -404,7 +404,7 @@ class _MainScreenState extends State<MainScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  '${_config.partsCount} ส่วน',
+                                  '${_config.partsCount} parts',
                                   style: const TextStyle(
                                     color: Color(0xFF818CF8),
                                     fontWeight: FontWeight.bold,
@@ -436,7 +436,7 @@ class _MainScreenState extends State<MainScreen> {
                             ),
                           ),
                           const Text(
-                            'ระบบจะแบ่งไฟล์ออกเป็นจำนวนส่วนเท่าๆ กันโดยอัตโนมัติ',
+                            'Audio will be split into equal duration parts automatically',
                             style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
                           ),
                         ] else ...[
@@ -444,7 +444,7 @@ class _MainScreenState extends State<MainScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text(
-                                'ความยาวส่วนละ (นาที):',
+                                'Part duration (minutes):',
                                 style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 13),
                               ),
                               Container(
@@ -454,7 +454,7 @@ class _MainScreenState extends State<MainScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  '${_config.durationMinutes.toStringAsFixed(1)} นาที',
+                                  '${_config.durationMinutes.toStringAsFixed(1)} min',
                                   style: const TextStyle(
                                     color: Color(0xFF818CF8),
                                     fontWeight: FontWeight.bold,
@@ -486,7 +486,7 @@ class _MainScreenState extends State<MainScreen> {
                             ),
                           ),
                           const Text(
-                            'ไฟล์จะถูกแบ่งตามความยาวที่กำหนด และส่วนสุดท้ายจะเก็บเวลาที่เหลือทั้งหมด',
+                            'Files will be split by duration; the last part keeps remaining time',
                             style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
                           ),
                         ],
@@ -498,7 +498,7 @@ class _MainScreenState extends State<MainScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
-                              'การเหลื่อมเวลา (Overlap):',
+                              'Audio Overlap:',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
@@ -513,8 +513,8 @@ class _MainScreenState extends State<MainScreen> {
                               ),
                               child: Text(
                                 _config.overlapSeconds == 0
-                                    ? 'ปิด (0s)'
-                                    : '${_config.overlapSeconds.toInt()} วินาที',
+                                    ? 'Off (0s)'
+                                    : '${_config.overlapSeconds.toInt()}s',
                                 style: TextStyle(
                                   color: _config.overlapSeconds > 0
                                       ? const Color(0xFF10B981)
@@ -575,37 +575,14 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                         const SizedBox(height: 6),
                         const Text(
-                          'Option B (Head Overlap): ดึงเวลาเริ่มของไฟล์ที่ 2 เป็นต้นไปถอยหลังกลับมา ป้องกันเสียงขาดตอน',
+                          'Option B (Head Overlap): Pulls back start time of subsequent parts to avoid audio cutoff',
                           style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
                         ),
 
                         const SizedBox(height: 20),
 
-                        // Filename & Time Estimation Preview
                         const Text(
-                          'ตัวอย่างชื่อไฟล์ (Filename Preview):',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0F172A),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFF334155)),
-                          ),
-                          child: _buildFilenamePreview(),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        const Text(
-                          'สถานที่จัดเก็บ (Export Directory)',
+                          'Export Directory',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 13,
@@ -630,7 +607,7 @@ class _MainScreenState extends State<MainScreen> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    _config.customOutputFolder ?? 'ตามโฟลเดอร์เดิมของไฟล์ (Same as input)',
+                                    _config.customOutputFolder ?? 'Same as input folder',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -680,7 +657,7 @@ class _MainScreenState extends State<MainScreen> {
                                 ),
                               ),
                               SizedBox(width: 12),
-                              Text('กำลังประมวลผล...', style: TextStyle(color: Colors.white)),
+                              Text('Processing...', style: TextStyle(color: Colors.white)),
                             ],
                           )
                         : const Row(
@@ -689,7 +666,7 @@ class _MainScreenState extends State<MainScreen> {
                               Icon(Icons.content_cut_rounded, color: Colors.white, size: 18),
                               SizedBox(width: 8),
                               Text(
-                                'เริ่มแยกไฟล์เสียง',
+                                'Start Splitting',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 14,
@@ -722,7 +699,7 @@ class _MainScreenState extends State<MainScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'รายการไฟล์เสียง (.m4a)',
+                              'Audio Files (.m4a)',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 22,
@@ -731,7 +708,7 @@ class _MainScreenState extends State<MainScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'นำเข้าไฟล์เพื่อเริ่มทำการแบ่งตามการตั้งค่า (${_audioFiles.length} ไฟล์)',
+                              'Import files to split according to settings (${_audioFiles.length} files)',
                               style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -745,7 +722,7 @@ class _MainScreenState extends State<MainScreen> {
                           OutlinedButton.icon(
                             onPressed: _isProcessing ? null : _pickFiles,
                             icon: const Icon(Icons.add_rounded, size: 18),
-                            label: const Text('เพิ่มไฟล์...'),
+                            label: const Text('Add Files...'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.white,
                               side: const BorderSide(color: Color(0xFF475569)),
@@ -757,14 +734,13 @@ class _MainScreenState extends State<MainScreen> {
                             IconButton(
                               onPressed: _isProcessing ? null : _clearFiles,
                               icon: const Icon(Icons.delete_sweep_rounded, color: Color(0xFFEF4444)),
-                              tooltip: 'ล้างรายการทั้งหมด',
+                              tooltip: 'Clear All',
                             ),
                           ],
                         ],
                       ),
                     ],
                   ),
-
 
                   const SizedBox(height: 20),
 
@@ -814,7 +790,7 @@ class _MainScreenState extends State<MainScreen> {
                                     ),
                                     const SizedBox(height: 16),
                                     const Text(
-                                      'ลากไฟล์ .m4a มาวางที่นี่',
+                                      'Drop .m4a files here',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 16,
@@ -823,8 +799,31 @@ class _MainScreenState extends State<MainScreen> {
                                     ),
                                     const SizedBox(height: 6),
                                     const Text(
-                                      'หรือคลิกปุ่ม "เพิ่มไฟล์..." ด้านบนเพื่อเลือกไฟล์',
+                                      'or click "Add Files..." above to browse',
                                       style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                                    ),
+                                    const SizedBox(height: 14),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0F172A),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: const Color(0xFF334155)),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.label_outline_rounded, size: 14, color: Color(0xFF818CF8)),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            'Filename Preview will be shown directly inside each audio card',
+                                            style: TextStyle(
+                                              color: Color(0xFF94A3B8),
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -842,87 +841,96 @@ class _MainScreenState extends State<MainScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(color: const Color(0xFF334155)),
                                     ),
-                                    child: Row(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF334155),
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          child: const Icon(
-                                            Icons.audio_file_rounded,
-                                            color: Color(0xFF818CF8),
-                                            size: 24,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                item.name,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 14,
-                                                ),
+                                        Row(
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(10),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF334155),
+                                                borderRadius: BorderRadius.circular(10),
                                               ),
-                                              const SizedBox(height: 4),
-                                              Wrap(
-                                                spacing: 12,
-                                                runSpacing: 4,
-                                                crossAxisAlignment: WrapCrossAlignment.center,
+                                              child: const Icon(
+                                                Icons.audio_file_rounded,
+                                                color: Color(0xFF818CF8),
+                                                size: 24,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
-                                                    'ขนาด: ${item.formattedSize}',
+                                                    item.name,
                                                     style: const TextStyle(
-                                                      color: Color(0xFF64748B),
-                                                      fontSize: 12,
+                                                      color: Colors.white,
+                                                      fontWeight: FontWeight.w600,
+                                                      fontSize: 14,
                                                     ),
                                                   ),
-                                                  Text(
-                                                    'ความยาว: ${item.formattedDuration}',
-                                                    style: const TextStyle(
-                                                      color: Color(0xFF64748B),
-                                                      fontSize: 12,
-                                                    ),
+                                                  const SizedBox(height: 4),
+                                                  Wrap(
+                                                    spacing: 12,
+                                                    runSpacing: 4,
+                                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                                    children: [
+                                                      Text(
+                                                        'Size: ${item.formattedSize}',
+                                                        style: const TextStyle(
+                                                          color: Color(0xFF64748B),
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        'Duration: ${item.formattedDuration}',
+                                                        style: const TextStyle(
+                                                          color: Color(0xFF64748B),
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                      if (item.durationSeconds > 0) ...[
+                                                        Builder(
+                                                          builder: (context) {
+                                                            final segs = SplitCalculator.calculateSegments(
+                                                              totalDuration: item.durationSeconds,
+                                                              config: _config,
+                                                            );
+                                                            return Text(
+                                                              'Est: ${segs.length} parts${_config.overlapSeconds > 0 ? " (overlap ${_config.overlapSeconds.toInt()}s)" : ""}',
+                                                              style: const TextStyle(
+                                                                color: Color(0xFF818CF8),
+                                                                fontSize: 12,
+                                                              ),
+                                                            );
+                                                          },
+                                                        ),
+                                                      ],
+                                                    ],
                                                   ),
-                                                  if (item.durationSeconds > 0) ...[
-                                                    Builder(
-                                                      builder: (context) {
-                                                        final segs = SplitCalculator.calculateSegments(
-                                                          totalDuration: item.durationSeconds,
-                                                          config: _config,
-                                                        );
-                                                        return Text(
-                                                          'ประเมิน: ${segs.length} ไฟล์${_config.overlapSeconds > 0 ? " (เหลื่อม ${_config.overlapSeconds.toInt()}s)" : ""}',
-                                                          style: const TextStyle(
-                                                            color: Color(0xFF818CF8),
-                                                            fontSize: 12,
-                                                          ),
-                                                        );
-                                                      },
-                                                    ),
-                                                  ],
                                                 ],
                                               ),
-                                            ],
-                                          ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            // Status badge
+                                            _buildStatusBadge(item),
+                                            const SizedBox(width: 8),
+                                            IconButton(
+                                              onPressed: _isProcessing ? null : () => _removeFile(index),
+                                              icon: const Icon(
+                                                Icons.close_rounded,
+                                                color: Color(0xFF64748B),
+                                                size: 18,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        const SizedBox(width: 12),
-                                        // Status badge
-                                        _buildStatusBadge(item),
-                                        const SizedBox(width: 8),
-                                        IconButton(
-                                          onPressed: _isProcessing ? null : () => _removeFile(index),
-                                          icon: const Icon(
-                                            Icons.close_rounded,
-                                            color: Color(0xFF64748B),
-                                            size: 18,
-                                          ),
-                                        ),
+                                        if (item.durationSeconds > 0) ...[
+                                          const SizedBox(height: 12),
+                                          _buildCardFilenamePreview(item),
+                                        ],
                                       ],
                                     ),
                                   );
@@ -995,7 +1003,7 @@ class _MainScreenState extends State<MainScreen> {
             borderRadius: BorderRadius.circular(20),
           ),
           child: const Text(
-            'พร้อมใช้งาน',
+            'Ready',
             style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
           ),
         );
@@ -1016,7 +1024,7 @@ class _MainScreenState extends State<MainScreen> {
               ),
               SizedBox(width: 6),
               Text(
-                'กำลังตัดไฟล์...',
+                'Splitting...',
                 style: TextStyle(color: Color(0xFF818CF8), fontSize: 11),
               ),
             ],
@@ -1030,13 +1038,13 @@ class _MainScreenState extends State<MainScreen> {
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            'เสร็จแล้ว (${item.splitCount} ไฟล์)',
+            'Done (${item.splitCount} files)',
             style: const TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.w600),
           ),
         );
       case ProcessStatus.error:
         return Tooltip(
-          message: item.errorMessage ?? 'เกิดข้อผิดพลาดในการตัดแบ่งไฟล์',
+          message: item.errorMessage ?? 'Error splitting audio file',
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
@@ -1044,7 +1052,7 @@ class _MainScreenState extends State<MainScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text(
-              'เกิดข้อผิดพลาด',
+              'Error',
               style: TextStyle(color: Color(0xFFEF4444), fontSize: 11),
             ),
           ),
@@ -1052,105 +1060,129 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  Widget _buildFilenamePreview() {
-    String sampleName = 'sample_audio';
-    double sampleTotalDur = 900.0; // Default 15 minutes for preview
-
-    if (_audioFiles.isNotEmpty) {
-      final first = _audioFiles.first;
-      sampleName = p.basenameWithoutExtension(first.path);
-      if (first.durationSeconds > 0) {
-        sampleTotalDur = first.durationSeconds;
-      }
-    }
-
+  Widget _buildCardFilenamePreview(AudioItem item) {
+    final rawName = p.basenameWithoutExtension(item.path);
     final segments = SplitCalculator.calculateSegments(
-      totalDuration: sampleTotalDur,
+      totalDuration: item.durationSeconds,
       config: _config,
     );
 
-    if (segments.isEmpty) {
-      return const Text(
-        'ไม่สามารถประเมินชื่อไฟล์ได้',
-        style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
-      );
-    }
+    if (segments.isEmpty) return const SizedBox.shrink();
 
     final previewSegments = segments.take(2).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final seg in previewSegments) ...[
-          Container(
-            margin: const EdgeInsets.only(bottom: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: seg.effectiveOverlap > 0
-                    ? const Color(0xFF10B981).withOpacity(0.3)
-                    : const Color(0xFF334155),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  SplitCalculator.generateOutputFilename(
-                    rawName: sampleName,
-                    index: seg.index,
-                    totalCount: segments.length,
-                    mode: _config.mode,
-                    actualStart: seg.actualStart,
-                    actualEnd: seg.actualEnd,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF818CF8),
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                    fontWeight: FontWeight.w500,
-                  ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B).withOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF334155).withOpacity(0.7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.label_outline_rounded, size: 13, color: Color(0xFF818CF8)),
+              const SizedBox(width: 6),
+              const Text(
+                'Filename Preview',
+                style: TextStyle(
+                  color: Color(0xFFCBD5E1),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 3),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'ช่วง: ${SplitCalculator.formatTimeForFilename(seg.actualStart)} - ${SplitCalculator.formatTimeForFilename(seg.actualEnd)} (${seg.actualDuration.toStringAsFixed(1)}s)',
-                      style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+              ),
+              const Spacer(),
+              Text(
+                'Total ${segments.length} parts',
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 10),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          for (final seg in previewSegments) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF334155),
+                      borderRadius: BorderRadius.circular(3),
                     ),
-                    if (seg.effectiveOverlap > 0)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'เหลื่อมหน้า ${seg.effectiveOverlap.toInt()}s',
-                          style: const TextStyle(
-                            color: Color(0xFF10B981),
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
+                    child: Text(
+                      '#${seg.index + 1}',
+                      style: const TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      SplitCalculator.generateOutputFilename(
+                        rawName: rawName,
+                        index: seg.index,
+                        totalCount: segments.length,
+                        mode: _config.mode,
+                        actualStart: seg.actualStart,
+                        actualEnd: seg.actualEnd,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF818CF8),
+                        fontSize: 11,
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Range: ${SplitCalculator.formatTimeForFilename(seg.actualStart)} - ${SplitCalculator.formatTimeForFilename(seg.actualEnd)} (${seg.actualDuration.toStringAsFixed(1)}s)',
+                    style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+                  ),
+                  if (seg.effectiveOverlap > 0) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Text(
+                        'Overlap ${seg.effectiveOverlap.toInt()}s',
+                        style: const TextStyle(
+                          color: Color(0xFF10B981),
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
+                    ),
                   ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
+          if (segments.length > 2)
+            Padding(
+              padding: const EdgeInsets.only(top: 3, left: 2),
+              child: Text(
+                '... and ${segments.length - 2} more parts',
+                style: const TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 10,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
         ],
-        if (segments.length > 2)
-          Text(
-            '... และอีก ${segments.length - 2} ไฟล์ (${segments.length} ส่วน)',
-            style: const TextStyle(color: Color(0xFF64748B), fontSize: 10, fontStyle: FontStyle.italic),
-          ),
-      ],
+      ),
     );
   }
 }

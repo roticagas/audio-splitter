@@ -10,16 +10,18 @@ void main() {
     expect(find.text('macOS M4A Edition'), findsOneWidget);
 
     // Verify Overlap section
-    expect(find.text('การเหลื่อมเวลา (Overlap):'), findsOneWidget);
+    expect(find.text('Audio Overlap:'), findsOneWidget);
     expect(find.text('Off (0s)'), findsOneWidget);
     expect(find.text('5s'), findsOneWidget);
     expect(find.text('10s'), findsOneWidget);
     expect(find.text('15s'), findsOneWidget);
 
     // Verify Filename Preview section
-    expect(find.text('ตัวอย่างชื่อไฟล์ (Filename Preview):'), findsOneWidget);
+    expect(find.textContaining('Filename Preview'), findsOneWidget);
+
+
 
     // Verify Start action button
-    expect(find.text('เริ่มแยกไฟล์เสียง'), findsOneWidget);
+    expect(find.text('Start Splitting'), findsOneWidget);
   });
 }
