@@ -802,29 +802,6 @@ class _MainScreenState extends State<MainScreen> {
                                       'or click "Add Files..." above to browse',
                                       style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
                                     ),
-                                    const SizedBox(height: 14),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF0F172A),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: const Color(0xFF334155)),
-                                      ),
-                                      child: const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.label_outline_rounded, size: 14, color: Color(0xFF818CF8)),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            'Filename Preview will be shown directly inside each audio card',
-                                            style: TextStyle(
-                                              color: Color(0xFF94A3B8),
-                                              fontSize: 11,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
                                   ],
                                 ),
                               )
@@ -863,12 +840,18 @@ class _MainScreenState extends State<MainScreen> {
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  Text(
-                                                    item.name,
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontWeight: FontWeight.w600,
-                                                      fontSize: 14,
+                                                  Tooltip(
+                                                    message: item.name,
+                                                    waitDuration: const Duration(milliseconds: 300),
+                                                    child: Text(
+                                                      item.name,
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight: FontWeight.w600,
+                                                        fontSize: 14,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                   const SizedBox(height: 4),
@@ -1102,84 +1085,143 @@ class _MainScreenState extends State<MainScreen> {
           ),
           const SizedBox(height: 6),
           for (final seg in previewSegments) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            Builder(
+              builder: (context) {
+                final fullFilename = SplitCalculator.generateOutputFilename(
+                  rawName: rawName,
+                  index: seg.index,
+                  totalCount: segments.length,
+                  mode: _config.mode,
+                  actualStart: seg.actualStart,
+                  actualEnd: seg.actualEnd,
+                );
+                final timeRange =
+                    '${SplitCalculator.formatTimeForFilename(seg.actualStart)} - ${SplitCalculator.formatTimeForFilename(seg.actualEnd)} (${seg.actualDuration.toStringAsFixed(1)}s)';
+                final tooltipMessage = seg.effectiveOverlap > 0
+                    ? '$fullFilename\nRange: $timeRange\nHead Overlap: ${seg.effectiveOverlap.toInt()}s'
+                    : '$fullFilename\nRange: $timeRange';
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Tooltip(
+                    message: tooltipMessage,
+                    waitDuration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF334155),
-                      borderRadius: BorderRadius.circular(3),
+                      color: const Color(0xFF0F172A),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFF475569)),
                     ),
-                    child: Text(
-                      '#${seg.index + 1}',
-                      style: const TextStyle(
-                        color: Color(0xFF94A3B8),
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    textStyle: const TextStyle(
+                      color: Color(0xFFF1F5F9),
+                      fontSize: 11,
+                      fontFamily: 'monospace',
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      SplitCalculator.generateOutputFilename(
-                        rawName: rawName,
-                        index: seg.index,
-                        totalCount: segments.length,
-                        mode: _config.mode,
-                        actualStart: seg.actualStart,
-                        actualEnd: seg.actualEnd,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF818CF8),
-                        fontSize: 11,
-                        fontFamily: 'monospace',
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Range: ${SplitCalculator.formatTimeForFilename(seg.actualStart)} - ${SplitCalculator.formatTimeForFilename(seg.actualEnd)} (${seg.actualDuration.toStringAsFixed(1)}s)',
-                    style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
-                  ),
-                  if (seg.effectiveOverlap > 0) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: Text(
-                        'Overlap ${seg.effectiveOverlap.toInt()}s',
-                        style: const TextStyle(
-                          color: Color(0xFF10B981),
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF334155),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: Text(
+                            '#${seg.index + 1}',
+                            style: const TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            fullFilename,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF818CF8),
+                              fontSize: 11,
+                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Range: ${SplitCalculator.formatTimeForFilename(seg.actualStart)} - ${SplitCalculator.formatTimeForFilename(seg.actualEnd)} (${seg.actualDuration.toStringAsFixed(1)}s)',
+                          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+                        ),
+                        if (seg.effectiveOverlap > 0) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: Text(
+                              'Overlap ${seg.effectiveOverlap.toInt()}s',
+                              style: const TextStyle(
+                                color: Color(0xFF10B981),
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
-                ],
-              ),
+                  ),
+                );
+              },
             ),
           ],
           if (segments.length > 2)
-            Padding(
-              padding: const EdgeInsets.only(top: 3, left: 2),
-              child: Text(
-                '... and ${segments.length - 2} more parts',
-                style: const TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 10,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
+            Builder(
+              builder: (context) {
+                final remainingList = segments.skip(2).map((s) {
+                  final fn = SplitCalculator.generateOutputFilename(
+                    rawName: rawName,
+                    index: s.index,
+                    totalCount: segments.length,
+                    mode: _config.mode,
+                    actualStart: s.actualStart,
+                    actualEnd: s.actualEnd,
+                  );
+                  final tr =
+                      '${SplitCalculator.formatTimeForFilename(s.actualStart)} - ${SplitCalculator.formatTimeForFilename(s.actualEnd)}';
+                  return '#${s.index + 1}: $fn ($tr)';
+                }).join('\n');
+
+                return Tooltip(
+                  message: remainingList,
+                  waitDuration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFF475569)),
+                  ),
+                  textStyle: const TextStyle(
+                    color: Color(0xFFF1F5F9),
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 3, left: 2),
+                    child: Text(
+                      '... and ${segments.length - 2} more parts (hover to view all)',
+                      style: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 10,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
         ],
       ),

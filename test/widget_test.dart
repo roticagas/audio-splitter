@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:audio_splitter/main.dart';
 
 void main() {
-  testWidgets('AudioSplitterApp renders correctly with Overlap and Filename Preview', (WidgetTester tester) async {
+  testWidgets('AudioSplitterApp renders correctly with Overlap settings and empty drop zone', (WidgetTester tester) async {
     await tester.pumpWidget(const AudioSplitterApp());
 
     // Verify header branding
@@ -16,10 +16,9 @@ void main() {
     expect(find.text('10s'), findsOneWidget);
     expect(find.text('15s'), findsOneWidget);
 
-    // Verify Filename Preview section
-    expect(find.textContaining('Filename Preview'), findsOneWidget);
-
-
+    // Verify empty drop zone texts (no preview shown when empty)
+    expect(find.text('Drop .m4a files here'), findsOneWidget);
+    expect(find.text('or click "Add Files..." above to browse'), findsOneWidget);
 
     // Verify Start action button
     expect(find.text('Start Splitting'), findsOneWidget);
